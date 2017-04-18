@@ -3,6 +3,7 @@ import Data.*;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -22,11 +23,28 @@ Vector<Clean_Conversation> cl_data = new Vector();
 Map reg_exp = new HashMap();
 
 String user;
-String date_reg_exp= "/\\d{2}/\\d{4}";
+String date_reg_exp= "(/\\d{2}/\\d{4})|(/\\d{1}/\\d{4})";
 Vector<String> reg_exp_key = new Vector();
 
 
-
+public Vector<String> find_item(String str,String type)
+{
+	Vector<String> temp_data =new Vector();
+	Pattern pt = (Pattern)reg_exp.get(type);
+	Matcher mt =pt.matcher(str);
+	
+	while(mt.find())
+	{
+		int strt = mt.start();
+		int end = mt.end();
+		temp_data.add(str.substring(strt,end));
+		
+	}
+		
+	return temp_data;
+	
+	
+}
 public Conversation()
 {	
 }
@@ -72,22 +90,46 @@ public void create_reg_exp() throws IOException
 	
 
 }
+
+
+
 // Read data for file
 
 public void  read_data(BufferedReader br) throws IOException
 {	
 	String line;
+	String data_reg = "(\\d{1}/\\d{1}/\\d{4})|(\\d{2}/\\d{2}/\\d{4})|(\\d{2}/\\d{1}/\\d{4})|(\\d{1}/\\d{2}/\\d{4})|(/\\d{2}/\\d{4})|(/\\d{1}/\\d{4})";
+	Pattern pt = Pattern.compile(data_reg);
+	List<String> temp_data = new LinkedList();
 	while((line = br.readLine())!= null)
 	{
 		data.add(line);
 	}
+	for(int i =0;i<data.size();i++)
+	{
+		Matcher mt = pt.matcher(data.elementAt(i));
 
+		if(!mt.find())
+		{
+			System.out.println(data.elementAt(i));
+			temp_data.set(temp_data.size()-1,temp_data.get(temp_data.size()-1)+data.elementAt(i));
+		}
+		else
+			temp_data.add(data.elementAt(i));
+	}
+	data.setSize(0);
+	for(int i =0;i<temp_data.size();i++)
+	{
+		data.add(temp_data.get(i));
+		
+	}
 }
 public void data_clean()
 {
 	int i =0;
 	String[] temp;
 		temp = data.elementAt(i).split(":");
+		System.out.println(data.elementAt(i)+"ddata temp[0]");
 	while(temp[1].contains("Host"))
 	{
 	i++;
@@ -103,6 +145,7 @@ public void data_clean()
 	m.find();
 	System.out.println(data.elementAt(0));
 	String temp_date = data.elementAt(0).substring(m.start(),m.end());
+	
 	cl_data.add(new Clean_Conversation());
 	cl_data.elementAt(0).date = temp_date;
 	Clean_Conversation temp_cl_conv = cl_data.elementAt(0);
@@ -113,7 +156,9 @@ public void data_clean()
 		temp_str = data.elementAt(j);
 		Matcher mt = pt.matcher(data.elementAt(j));
 		mt.find();
+		System.out.println(data.elementAt(j));
 		String Date = data.elementAt(j).substring(mt.start(),mt.end()); 
+		System.out.println(Date+"\n");
 		if(Date.equals(temp_date))
 		{
 			if(temp_str.contains("Host"))
@@ -204,6 +249,15 @@ public Vector<Word> create_list(String str)
 	}*/
 	return word;
 }
+
+public Vector<Order> order_from_str(String str)
+{
+	Vector<Order> order ;
+	Vector<Word>  word= create_list(str);
+	order = create_order(word);
+	return order;
+}
+
 public Vector<Order> create_order(Vector<Word> word)
 {
 	System.out.println("into create order");
@@ -247,36 +301,154 @@ public Vector<Order> create_order(Vector<Word> word)
 }
 
 public void read_conversation()
-{
+{	
+	Pattern send_pt = Pattern.compile("send|add");
+	Pattern rate_pt = Pattern.compile("(rate of)|(rateof)");
 	for(int con =0 ;con<cl_data.size();con++)
 	{
 		Clean_Conversation temp_con = cl_data.elementAt(con);
+		Order rate_order = null;
+		boolean rate_enq = false;
 		for(int line =0 ;line<temp_con.data.size();line++)
 		{
 			String temp_str = temp_con.data.elementAt(line);
-			System.out.println(temp_str);
+			
 			String user_type = temp_str.substring(0,"U".length());
+
 			temp_str = temp_str.substring("U:: ".length());
-			System.out.println(temp_str);
+
+			String[] sentence = temp_str.split("\\.");
+			
+			boolean rate_f,send_f;
+			
+			for(int sen = 0;sen<sentence.length;sen++)
+			{
+				String sent = sentence[sen];
+				Matcher send_mt = send_pt.matcher(sent);
+				Matcher rate_mt = rate_pt.matcher(sent);
+				if(send_mt.find())
+					send_f= true;
+				else
+					send_f = false;
+				if(rate_mt.find())
+					rate_f = true;
+				else
+					rate_f = false;
+				
 			if(user_type.equals("U"))
 			{
-				//TODO implement 
-				
-				System.out.println("inside user conversation");
+				//TODO implement
+				Vector<String> temp_item = find_item(temp_str,"Item_name");
+				String[] item_quan, item_unit;
+				if(rate_f)
+					
+				{
+				rate_order = new Order();
+				rate_enq =true;
+				if(temp_item.size()>0)
+				{
+					rate_order.item  = temp_item.elementAt(0);
+				}
+					
+				}
+				else if(send_f)
+				{
+					System.out.println("the item has to be sent");
+					if(rate_enq)
+					{
+						if((temp_item.size()==0))
+						{
+							System.out.println("inside if size ==0");
+						if(temp_item.elementAt(0).equals(rate_order.item))
+						{
+							Order quan_order = get_quant(sent);	
+							rate_order.unit = quan_order.unit;
+							rate_order.quantity = quan_order.quantity;
+							rate_f= false;
+							temp_con.orders.add(rate_order);
+						}
+						}
+					}
+					if((temp_item.size()>0))
+					{
+						rate_f = false;
+						Vector<Order> temp_order = order_from_str(sent);
+						append_order(temp_con.orders,temp_order);
+						
+					}
+					
+				}
+				else if(temp_item.size()>0)
+				{
+					Vector<Order> temp_order = order_from_str(sent);
+					append_order(temp_con.orders,temp_order);
+				}
 				
 			}
 			if(user_type.equals("H"))
 			{
-				System.out.println("inside host area");
 				
 			}
+			
+		}
+		}
+	}
+	
+	System.out.println(cl_data.size());
+	
+	for(int i =0;i<cl_data.size();i++)
+	{
+		System.out.println("the order for " + i + "th conversation is \n");
+		for(int j =0;j<cl_data.elementAt(i).orders.size();j++)
+			System.out.println("the order is " + cl_data.elementAt(i).orders.elementAt(j).quantity + cl_data.elementAt(i).orders.elementAt(j).unit+cl_data.elementAt(i).orders.elementAt(j).item);
+	}
+	
+}
+public Order get_quant(String str)
+	{
+	Vector<Word> word = create_list(str);
+	Order order  = new Order();
+	String quan="", unit="";
+		for(int i =0;i<word.size();i++)
+		{
+			if(word.elementAt(i).word_type.equals("Item_number"))
+				quan = word.elementAt(i).word;
+			if(word.elementAt(i).word_type.equals("Item_unit"))
+				{
+				unit = word.elementAt(i).word;
+				 break;
+				}
+		}
+		if(!unit.equals(""))
+			order.unit= unit;
+		if(!quan.equals(""))
+			order.quantity = quan;
+		return order;
+		
+	}
+public Vector<Order> unit_order(String str)
+{
+	Vector<Order> order = new Vector();
+	String[] temp_str = str.split(",");
+	Vector<Order> temp_order;
+	for(int i =0;i<temp_str.length;i++)
+	{
+		temp_order=order_from_str(temp_str[i]);
+		for(int j =0;j<temp_order.size();j++)
+		{
+			order.add(temp_order.elementAt(j));
+			
 		}
 		
 	}
-	
-	
-}
+	return order;
 
+}
+public void append_order(Vector<Order> o1,Vector<Order> o2)
+{
+	for(int i =0 ; i<o2.size();i++)
+		o1.add(o2.elementAt(i));
+	}
 public void  print_data()
 {
 	int size = data.size();
