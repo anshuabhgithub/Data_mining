@@ -65,7 +65,7 @@ public void create_reg_exp() throws IOException
 		file = new FileInputStream("./src/Data/"+reg_data.elementAt(i));
 		InputStreamReader rd = new InputStreamReader(file);
 		BufferedReader bf = new BufferedReader(rd);
-		reg_data.set(i,bf.readLine());
+		reg_data.set(i,bf.readLine().toLowerCase());
 		bf.close();
 		}
 		}
@@ -111,7 +111,7 @@ public void  read_data(BufferedReader br) throws IOException
 
 		if(!mt.find())
 		{
-			System.out.println(data.elementAt(i));
+			//System.out.println(data.elementAt(i));
 			temp_data.set(temp_data.size()-1,temp_data.get(temp_data.size()-1)+data.elementAt(i));
 		}
 		else
@@ -129,7 +129,7 @@ public void data_clean()
 	int i =0;
 	String[] temp;
 		temp = data.elementAt(i).split(":");
-		System.out.println(data.elementAt(i)+"ddata temp[0]");
+		//System.out.println(data.elementAt(i)+"ddata temp[0]");
 	while(temp[1].contains("Host"))
 	{
 	i++;
@@ -143,31 +143,31 @@ public void data_clean()
 	Matcher m = pt.matcher(data.elementAt(0));
 	
 	m.find();
-	System.out.println(data.elementAt(0));
+	//System.out.println(data.elementAt(0));
 	String temp_date = data.elementAt(0).substring(m.start(),m.end());
 	
 	cl_data.add(new Clean_Conversation());
 	cl_data.elementAt(0).date = temp_date;
 	Clean_Conversation temp_cl_conv = cl_data.elementAt(0);
-	System.out.println("\n the size of data is  "+ data.size());
+	//System.out.println("\n the size of data is  "+ data.size());
 	for(int j=0;j<data.size();j++)
 	{
 		//Pattern pt = Pattern.compile(date_reg_exp);
 		temp_str = data.elementAt(j);
 		Matcher mt = pt.matcher(data.elementAt(j));
 		mt.find();
-		System.out.println(data.elementAt(j));
+		//System.out.println(data.elementAt(j));
 		String Date = data.elementAt(j).substring(mt.start(),mt.end()); 
-		System.out.println(Date+"\n");
+		//System.out.println(Date+"\n");
 		if(Date.equals(temp_date))
 		{
 			if(temp_str.contains("Host"))
 				{
-				temp_cl_conv.data.addElement("H:"+temp_str.substring(temp_str.indexOf("Host")+"Host".length()));
+				temp_cl_conv.data.addElement("H:"+temp_str.substring(temp_str.indexOf("Host")+"Host".length()).toLowerCase());
 				}
 			else
 			{
-				temp_cl_conv.data.addElement("U:"+temp_str.substring(temp_str.indexOf(user)+user.length()));
+				temp_cl_conv.data.addElement("U:"+temp_str.substring(temp_str.indexOf(user)+user.length()).toLowerCase());
 			}
 		}
 		else
@@ -178,11 +178,11 @@ public void data_clean()
 			temp_cl_conv.date = Date;
 			if(temp_str.contains("Host"))
 			{
-			temp_cl_conv.data.addElement("H:"+temp_str.substring(temp_str.indexOf("Host")+"Host".length()));
+			temp_cl_conv.data.addElement("H:"+temp_str.substring(temp_str.indexOf("Host")+"Host".length()).toLowerCase());
 			}
 		else
 		{
-			temp_cl_conv.data.addElement("U:"+temp_str.substring(temp_str.indexOf(user)+user.length()));
+			temp_cl_conv.data.addElement("U:"+temp_str.substring(temp_str.indexOf(user)+user.length()).toLowerCase());
 		}
 				
 		}
@@ -194,7 +194,7 @@ public void data_clean()
 public void check()
 {	
 	String str ="1kg potatoes, 1 kg onions, 1 kg tomato, half kg beans, 250 gm capsicum, 1 cauliflower, 1 kg bhindi, half kg parwal, 6 elaichi bananas";
-	System.out.println(str);
+	//System.out.println(str);
 	Vector<Word> word;
 	word = create_list(str);
 	Vector<Order> order ;
@@ -252,20 +252,26 @@ public Vector<Word> create_list(String str)
 
 public Vector<Order> order_from_str(String str)
 {
-	Vector<Order> order ;
-	Vector<Word>  word= create_list(str);
-	order = create_order(word);
+	Vector<Order> order = new Vector();
+	String[] temp_str = str.split(",|and");
+	for(int i=0;i<temp_str.length;i++)
+	{
+		Vector<Word>  word= create_list(temp_str[i]);
+		Vector<Order> temp_order = create_order(word);
+		for(int j =0 ;j<temp_order.size();j++)
+			order.add(temp_order.elementAt(j));
+	}
 	return order;
 }
 
 public Vector<Order> create_order(Vector<Word> word)
 {
-	System.out.println("into create order");
+	//System.out.println("into create order");
 	Vector<Order> order =new Vector();
 	order.add(new Order());
 	for(int i =0;i<word.size();i++)
 	{
-		System.out.print(word.elementAt(i).word+"\n");
+		//System.out.print(word.elementAt(i).word+"\n");
 		if(order.lastElement().item == null)
 		{
 			if(word.elementAt(i).word_type.equals("Item_unit"))
@@ -303,7 +309,9 @@ public Vector<Order> create_order(Vector<Word> word)
 public void read_conversation()
 {	
 	Pattern send_pt = Pattern.compile("send|add");
-	Pattern rate_pt = Pattern.compile("(rate of)|(rateof)");
+	Pattern rate_pt = Pattern.compile("(rate of)|(rateof)|(price)|(didn't send)|(didn't get)");
+	Pattern lv_item = Pattern.compile("leave");
+	
 	for(int con =0 ;con<cl_data.size();con++)
 	{
 		Clean_Conversation temp_con = cl_data.elementAt(con);
@@ -319,13 +327,14 @@ public void read_conversation()
 
 			String[] sentence = temp_str.split("\\.");
 			
-			boolean rate_f,send_f;
+			boolean rate_f,send_f,lv_f;
 			
 			for(int sen = 0;sen<sentence.length;sen++)
 			{
 				String sent = sentence[sen];
 				Matcher send_mt = send_pt.matcher(sent);
 				Matcher rate_mt = rate_pt.matcher(sent);
+				Matcher lv_mt = lv_item.matcher(sent);
 				if(send_mt.find())
 					send_f= true;
 				else
@@ -334,6 +343,10 @@ public void read_conversation()
 					rate_f = true;
 				else
 					rate_f = false;
+				if(lv_mt.find())
+					lv_f =true;
+				else
+					lv_f= false;
 				
 			if(user_type.equals("U"))
 			{
@@ -344,29 +357,40 @@ public void read_conversation()
 					
 				{
 				rate_order = new Order();
-				rate_enq =true;
+				
 				if(temp_item.size()>0)
 				{
+					rate_enq =true;
 					rate_order.item  = temp_item.elementAt(0);
+					System.out.println("inside  rate inquiry" + sent.substring(rate_mt.start(), rate_mt.end())+rate_order.item+"\n");
+					System.out.println(temp_str+"\n");	
 				}
-					
+				}
+				else if(lv_f)
+				{
+					//System.out.println("going into leave section");
+					if(temp_item.size()>0);
+					for(int i =0;i<temp_item.size();i++)
+					{
+						int j = find_item(temp_con.orders,temp_item.elementAt(i));
+						if(j!=-1)
+						{
+							temp_con.orders.elementAt(j).item = "";
+						}
+					}
 				}
 				else if(send_f)
 				{
-					System.out.println("the item has to be sent");
+					//System.out.println("the item has to be sent");
 					if(rate_enq)
 					{
-						if((temp_item.size()==0))
+						if(temp_item.size()==0)
 						{
-							System.out.println("inside if size ==0");
-						if(temp_item.elementAt(0).equals(rate_order.item))
-						{
-							Order quan_order = get_quant(sent);	
-							rate_order.unit = quan_order.unit;
-							rate_order.quantity = quan_order.quantity;
-							rate_f= false;
-							temp_con.orders.add(rate_order);
-						}
+							System.out.println("inside if size ==0"+temp_str);
+							Order r_order =get_quant(temp_str);
+							r_order.item = rate_order.item;
+							temp_con.orders.add(r_order);
+						
 						}
 					}
 					if((temp_item.size()>0))
@@ -382,6 +406,7 @@ public void read_conversation()
 				{
 					Vector<Order> temp_order = order_from_str(sent);
 					append_order(temp_con.orders,temp_order);
+					rate_enq = false;
 				}
 				
 			}
@@ -394,13 +419,13 @@ public void read_conversation()
 		}
 	}
 	
-	System.out.println(cl_data.size());
+	//System.out.println(cl_data.size());
 	
 	for(int i =0;i<cl_data.size();i++)
 	{
-		System.out.println("the order for " + i + "th conversation is \n");
+		System.out.println("the order for " + i + "th conversation is " + cl_data.elementAt(i).date + "\n");
 		for(int j =0;j<cl_data.elementAt(i).orders.size();j++)
-			System.out.println("the order is " + cl_data.elementAt(i).orders.elementAt(j).quantity + cl_data.elementAt(i).orders.elementAt(j).unit+cl_data.elementAt(i).orders.elementAt(j).item);
+			System.out.println(  cl_data.elementAt(i).orders.elementAt(j).quantity +"  "+ cl_data.elementAt(i).orders.elementAt(j).unit + " " +cl_data.elementAt(i).orders.elementAt(j).item);
 	}
 	
 }
@@ -444,6 +469,16 @@ public Vector<Order> unit_order(String str)
 	return order;
 
 }
+public int find_item(Vector<Order> order,String str)
+{
+	int i=0;
+	for(i =0;i<order.size();i++)
+		if(order.elementAt(i).item.contains(str))
+			break;
+	if(i == order.size())
+		i =-1 ;
+return i;	
+}
 public void append_order(Vector<Order> o1,Vector<Order> o2)
 {
 	for(int i =0 ; i<o2.size();i++)
@@ -452,8 +487,8 @@ public void append_order(Vector<Order> o1,Vector<Order> o2)
 public void  print_data()
 {
 	int size = data.size();
-		for(int i=0;i<size;i++)
-			System.out.println(data.elementAt(i));
+		//for(int i=0;i<size;i++)
+			//System.out.println(data.elementAt(i));
 }
 }
 
