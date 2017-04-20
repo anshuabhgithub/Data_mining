@@ -137,7 +137,7 @@ public void data_clean()
 	}
 	//System.out.print(temp[1]);
 	this.user= temp[1].substring(temp[1].indexOf("- ")+1);
-	System.out.println(this.user);
+	//System.out.println(this.user);
 	String temp_str;
 	Pattern pt = Pattern.compile(date_reg_exp);
 	Matcher m = pt.matcher(data.elementAt(0));
@@ -362,8 +362,8 @@ public void read_conversation()
 				{
 					rate_enq =true;
 					rate_order.item  = temp_item.elementAt(0);
-					System.out.println("inside  rate inquiry" + sent.substring(rate_mt.start(), rate_mt.end())+rate_order.item+"\n");
-					System.out.println(temp_str+"\n");	
+					//System.out.println("inside  rate inquiry" + sent.substring(rate_mt.start(), rate_mt.end())+rate_order.item+"\n");
+					//System.out.println(temp_str+"\n");	
 				}
 				}
 				else if(lv_f)
@@ -386,7 +386,7 @@ public void read_conversation()
 					{
 						if(temp_item.size()==0)
 						{
-							System.out.println("inside if size ==0"+temp_str);
+							//System.out.println("inside if size ==0"+temp_str);
 							Order r_order =get_quant(temp_str);
 							r_order.item = rate_order.item;
 							temp_con.orders.add(r_order);
@@ -408,6 +408,21 @@ public void read_conversation()
 					append_order(temp_con.orders,temp_order);
 					rate_enq = false;
 				}
+				else if(temp_item.size() ==0)
+				{
+					if(rate_enq){
+					//System.out.println(temp_str+"\n");
+					Order temp_order = get_quant(temp_str);
+					if(temp_order!= null)
+					{
+					if(temp_order.unit!= null)
+					{
+						temp_order.item =rate_order.item;
+						temp_con.orders.add(temp_order);
+					}
+					}
+							}
+				}
 				
 			}
 			if(user_type.equals("H"))
@@ -422,10 +437,21 @@ public void read_conversation()
 	//System.out.println(cl_data.size());
 	
 	for(int i =0;i<cl_data.size();i++)
-	{
-		System.out.println("the order for " + i + "th conversation is " + cl_data.elementAt(i).date + "\n");
+	{	
+		if(cl_data.elementAt(i).orders.size()!=0){
+		System.out.print("the order form the conversation on " + cl_data.elementAt(i).date + "for " + user + "\n");
 		for(int j =0;j<cl_data.elementAt(i).orders.size();j++)
-			System.out.println(  cl_data.elementAt(i).orders.elementAt(j).quantity +"  "+ cl_data.elementAt(i).orders.elementAt(j).unit + " " +cl_data.elementAt(i).orders.elementAt(j).item);
+		{	Order temp_order=cl_data.elementAt(i).orders.elementAt(j);
+			if(!temp_order.item.equals(""))
+			{
+			if(temp_order.quantity!= null)
+				System.out.print(temp_order.quantity+" ");
+			if(temp_order.unit!=null)
+				System.out.print(temp_order.unit+" ");
+			System.out.println(temp_order.item);
+			}
+		}
+		}
 	}
 	
 }
